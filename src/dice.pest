@@ -1,0 +1,38 @@
+//! Parses a simple calculator-like grammar, supporting dice rolls
+//! and comments.
+//!
+//! [Comments](`Rule::COMMENT`) are enclosed in brackets, e.g.: `[ this is a comment ]`.
+//! 
+//! The [`Rule::calculation`] is the entrypoint to the parser.
+
+/// Matches a number, e.g.: `1234801` or `0`, but not `0121380` or `238 12`.
+num  = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* | ASCII_DIGIT }
+
+/// Matches a dice roll, e.g.: `1d20` or `300d1`, but not `012d23` or `1 d 20`.
+dice = @{ num ~ "d" ~ num }
+
+/// Matches any of the infix operators: `+`, `-`, `*`, `/`.
+operation = _{ add | subtract | multiply | divide }
+    /// Matches `+`.
+    add       =  { "+" }
+    /// Matches `-`.
+    subtract  =  { "-" }
+    /// Matches `*`.
+    multiply  =  { "*" }
+    /// Matches `/`.
+    divide    =  { "/" }
+
+/// Recursively matches a series of expressions, e.g.: 
+/// `1d20 + (13 + 1d13 - 1d5) * 23`.
+expr =  { term ~ (operation ~ term)* }
+/// Matches a single unit of computation, e.g.: `1d20` or `30` or `(1d20 + 120)`.
+term = _{ dice | num | "(" ~ expr ~ ")" }
+
+/// Entrypoint of the parser, matching a single [`Rule::expr`].
+calculation = _{ SOI ~ expr ~ EOI }
+
+/// Expressions can be broken up with spaces, tabs, or newlines.
+WHITESPACE = _{ " " | "\t" | "\n" }
+
+/// Comments are enclosed between `[` brackets `]`, and may span multiple lines.
+COMMENT    =  { "[" ~ (!"]" ~ ANY)* ~ "]" }
