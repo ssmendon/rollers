@@ -129,7 +129,7 @@ pub mod dice {
                 })
                 .map_prefix(|op, rhs| match op.as_rule() {
                     Rule::unary_minus => Expr::UnaryMinus(Box::new(rhs)),
-                    rule => unreachable!("Expr::parse expected prefix operation: found {:?}", rule),
+                    rule => unreachable!("Expr::parse expected prefix operation, found {:?}", rule),
                 })
                 .parse(pairs)
         }
