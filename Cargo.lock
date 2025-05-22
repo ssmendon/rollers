@@ -213,6 +213,7 @@ dependencies = [
  "pest",
  "pest_derive",
  "rand",
+ "thiserror",
 ]
 
 [[package]]

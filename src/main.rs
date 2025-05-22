@@ -1,7 +1,7 @@
 use std::io::{self, BufRead as _};
 
-use pest::Parser;
-use rollers::dice::{self, Rule, calculate, parse_expr_ast};
+use pest::Parser as _;
+use rollers::dice::{self, parser::Rule, parser::parse_expr};
 
 fn main() {
     let stdin = io::stdin();
@@ -13,16 +13,11 @@ fn main() {
             eprintln!("Couldn't read line: {}", why);
             continue;
         }
-        match dice::DiceParser::parse(Rule::calculation, &buffer) {
-            Ok(mut pairs) => {
-                let r = parse_expr_ast(pairs.next().unwrap().into_inner());
 
-                if let Ok(r) = r {
-                    println!("Parsed: {:#?}", r,);
-                    println!("Calculated result: {}", calculate(r))
-                } else if let Err(why) = r {
-                    eprintln!("Failed to parse: {:?}", why);
-                }
+        match dice::parser::DiceParser::parse(Rule::equation, &buffer) {
+            Ok(mut pairs) => {
+                let r = parse_expr(pairs.next().unwrap().into_inner());
+                println!("Parsed: {:#?}", r);
             }
             Err(why) => {
                 eprintln!("Parse failed: {:?}", why);

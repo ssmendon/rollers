@@ -1,38 +1,19 @@
-//! Parses a simple calculator-like grammar, supporting dice rolls
-//! and comments.
-//!
-//! [Comments](`Rule::COMMENT`) are enclosed in brackets, e.g.: `[ this is a comment ]`.
-//! 
-//! The [`Rule::calculation`] is the entrypoint to the parser.
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+COMMENT    = _{ "[" ~ (!"]" ~ ANY)* ~ "]" }
 
-/// Matches a number, e.g.: `1234801` or `0`, but not `0121380` or `238 12`.
-num  = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* | ASCII_DIGIT }
+natural = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT{,3} }
+dice    = ${ natural ~ ^"d" ~ natural }
+primary = _{ dice | natural | "(" ~ expr ~ ")" }
+atom    = _{ unary_op? ~ primary }
 
-/// Matches a dice roll, e.g.: `1d20` or `300d1`, but not `012d23` or `1 d 20`.
-dice = @{ num ~ "d" ~ num }
+unary_op    = _{ unary_minus }
+unary_minus =  { "-" }
 
-/// Matches any of the infix operators: `+`, `-`, `*`, `/`.
-operation = _{ add | subtract | multiply | divide }
-    /// Matches `+`.
-    add       =  { "+" }
-    /// Matches `-`.
-    subtract  =  { "-" }
-    /// Matches `*`.
-    multiply  =  { "*" }
-    /// Matches `/`.
-    divide    =  { "/" }
+bin_op   = _{ add | subtract | multiply | divide }
+add      =  { "+" }
+subtract =  { "-" }
+multiply =  { "*" }
+divide   =  { "/" }
 
-/// Recursively matches a series of expressions, e.g.: 
-/// `1d20 + (13 + 1d13 - 1d5) * 23`.
-expr =  { term ~ (operation ~ term)* }
-/// Matches a single unit of computation, e.g.: `1d20` or `30` or `(1d20 + 120)`.
-term = _{ dice | num | "(" ~ expr ~ ")" }
-
-/// Entrypoint of the parser, matching a single [`Rule::expr`].
-calculation = _{ SOI ~ expr ~ EOI }
-
-/// Expressions can be broken up with spaces, tabs, or newlines.
-WHITESPACE = _{ " " | "\t" | "\n" }
-
-/// Comments are enclosed between `[` brackets `]`, and may span multiple lines.
-COMMENT    =  { "[" ~ (!"]" ~ ANY)* ~ "]" }
+expr     =  { atom ~ (bin_op ~ atom)* }
+equation = _{ SOI ~ expr ~ EOI }
