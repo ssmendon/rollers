@@ -1,10 +1,16 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
-COMMENT    = _{ "[" ~ (!"]" ~ ANY)* ~ "]" }
+COMMENT    = _{ "/*" ~ (!"]" ~ ANY)* ~ "*/" }
 
 natural = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT{,3} }
 dice    = ${ natural ~ ^"d" ~ natural }
 primary = _{ dice | natural | "(" ~ expr ~ ")" }
-atom    = _{ unary_op? ~ primary }
+atom    = _{ unary_op? ~ primary ~ postfix_op? }
+
+postfix_op = _{ label }
+label      =  {
+    "[" ~ label_text ~ "]"
+}
+label_text =  { (!"]" ~ ANY)* }
 
 unary_op    = _{ unary_minus }
 unary_minus =  { "-" }

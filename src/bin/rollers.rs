@@ -4,6 +4,8 @@ use pest::Parser as _;
 use rollers::dice::{self, parser::Rule, parser::parse_expr};
 
 fn main() {
+    pest::set_error_detail(true);
+
     let stdin = io::stdin();
     let mut handle = stdin.lock();
     let mut buffer = String::new();
@@ -20,7 +22,7 @@ fn main() {
                 println!("Parsed: {:#?}", r);
             }
             Err(why) => {
-                eprintln!("Parse failed: {:?}", why);
+                eprintln!("Parse failed: {:#?}", why);
             }
         }
     }

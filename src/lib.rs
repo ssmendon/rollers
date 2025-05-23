@@ -6,6 +6,10 @@ pub mod dice {
 
         #[derive(Debug)]
         pub enum Expr {
+            Labeled {
+                lhs: Box<Expr>,
+                msg: String,
+            },
             UnaryMinus(Box<Expr>),
             Dice {
                 count: i32,
@@ -30,6 +34,7 @@ pub mod dice {
                     Expr::BinOp { lhs, op, rhs } => {
                         write!(f, "({} {} {})", lhs, op, rhs)
                     }
+                    Expr::Labeled { lhs, msg } => write!(f, "{}[{}]", lhs, msg),
                 }
             }
         }
@@ -91,6 +96,7 @@ pub mod dice {
                     .op(Op::infix(add, Left) | Op::infix(subtract, Left))
                     .op(Op::infix(multiply, Left) | Op::infix(divide, Left))
                     .op(Op::prefix(unary_minus))
+                    .op(Op::postfix(label))
             };
         }
 
@@ -130,6 +136,27 @@ pub mod dice {
                 .map_prefix(|op, rhs| match op.as_rule() {
                     Rule::unary_minus => Expr::UnaryMinus(Box::new(rhs)),
                     rule => unreachable!("Expr::parse expected prefix operation, found {:?}", rule),
+                })
+                .map_postfix(|lhs, op| match op.as_rule() {
+                    Rule::label => {
+                        // Forbid labelling a label by silently dropping it.
+                        if matches!(lhs, Expr::Labeled { lhs: _, msg: _ }) {
+                            return lhs;
+                        }
+
+                        let msg = op.into_inner().as_str().trim();
+                        if msg.is_empty() {
+                            lhs
+                        } else {
+                            Expr::Labeled {
+                                lhs: Box::new(lhs),
+                                msg: msg.to_owned(),
+                            }
+                        }
+                    }
+                    rule => {
+                        unreachable!("Expr::parse expected postfix operation, found {:?}", rule)
+                    }
                 })
                 .parse(pairs)
         }
