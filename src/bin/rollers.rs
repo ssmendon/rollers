@@ -20,6 +20,8 @@ fn main() {
             Ok(mut pairs) => {
                 let r = parse_expr(pairs.next().unwrap().into_inner());
                 println!("Parsed: {:#?}", r);
+                println!("Roll: {}", r);
+                println!("Normalized: {}", r.normalize());
             }
             Err(why) => {
                 eprintln!("Parse failed: {:#?}", why);

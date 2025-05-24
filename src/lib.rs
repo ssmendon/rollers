@@ -31,6 +31,73 @@ pub mod dice {
                     Expr::BinOp { .. } => false,
                 }
             }
+
+            fn get_bin_op(e: &Expr) -> Option<Op> {
+                match e {
+                    Expr::Natural(_) => None,
+                    Expr::Dice { .. } => None,
+                    Expr::Labeled { lhs, .. } => Expr::get_bin_op(lhs),
+                    Expr::UnaryMinus(expr) => Expr::get_bin_op(expr),
+                    Expr::BinOp { lhs, op, rhs } => Some(*op),
+                }
+            }
+
+            pub fn normalize(&self) -> Normalize<'_> {
+                Normalize { inner: self }
+            }
+        }
+
+        pub struct Normalize<'a> {
+            inner: &'a Expr,
+        }
+
+        impl Display for Normalize<'_> {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                match self.inner {
+                    Expr::Dice { .. } | Expr::Natural(..) => write!(f, "{}", self.inner),
+                    Expr::UnaryMinus(expr) => {
+                        if Expr::is_unit(expr) {
+                            write!(f, "-{}", expr.normalize())
+                        } else {
+                            write!(f, "-({})", expr.normalize())
+                        }
+                    }
+                    Expr::Labeled { lhs, msg } => {
+                        if Expr::is_unit(lhs) {
+                            write!(f, "{}[{}]", lhs.normalize(), msg)
+                        } else {
+                            write!(f, "({})[{}]", lhs.normalize(), msg)
+                        }
+                    }
+                    Expr::BinOp { lhs, op, rhs } => {
+                        let lop = Expr::get_bin_op(lhs)
+                            .map(Op::precedence)
+                            .unwrap_or_else(|| 0);
+                        let rop = Expr::get_bin_op(rhs)
+                            .map(Op::precedence)
+                            .unwrap_or_else(|| 0);
+                        let me = Op::precedence(*op);
+
+                        let rop = rop
+                            + if matches!(op, Op::Subtract | Op::Divide) {
+                                1
+                            } else {
+                                0
+                            };
+
+                        if me < lop {
+                            write!(f, "({}) {}", lhs.normalize(), op)?
+                        } else {
+                            write!(f, "{} {}", lhs.normalize(), op)?
+                        }
+                        if me < rop {
+                            write!(f, " ({})", rhs.normalize())
+                        } else {
+                            write!(f, " {}", rhs.normalize())
+                        }
+                    }
+                }
+            }
         }
 
         impl Display for Expr {
@@ -49,7 +116,7 @@ pub mod dice {
             }
         }
 
-        #[derive(Debug)]
+        #[derive(Debug, Clone, Copy)]
         pub enum Op {
             Add,
             Subtract,
@@ -153,7 +220,7 @@ pub mod dice {
         }
 
         pub fn parse_expr(pairs: Pairs<Rule>) -> Expr {
-            pest::set_call_limit(NonZero::new(512));
+            pest::set_call_limit(NonZero::new(1024));
             PRATT_PARSER
                 .map_primary(|primary| match primary.as_rule() {
                     Rule::dice => {
