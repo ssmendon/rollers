@@ -1,7 +1,23 @@
 [package]
 name = "rollers"
 version = "0.1.0"
+authors = ["Sohum Mendon <smendon@proton.me>"]
+description = """
+rollers is a minimal dice-notation parsing tool.
+"""
+documentation = "https://github.com/ssmendon/rollers"
+homepage = "https://github.com/ssmendon/rollers"
+repository = "https://github.com/ssmendon/rollers"
+keywords = ["dice", "calculator"]
+categories = ["command-line-utilities", "text-processing"]
+license = "Unlicense OR MIT"
 edition = "2024"
+rust-version = "1.87.0"
+
+[workspace]
+members = [
+    "crates/*"
+]
 
 [dependencies]
 anyhow = "1.0.98"
