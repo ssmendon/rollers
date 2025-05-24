@@ -1,4 +1,5 @@
 use poise::serenity_prelude as serenity;
+use rollers::dice::ast::eval;
 
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -38,7 +39,8 @@ async fn roll(
         let mut pairs = rollers::dice::parser::DiceParser::parse(Rule::equation, &expression)
             .map_err(|_| anyhow::anyhow!("bad dice roll"))?;
         let ast = parse_expr(pairs.next().unwrap().into_inner());
-        Ok(format!("{:#?}", ast))
+        let result = eval(&ast);
+        Ok(format!("{:#?}\n\nTotal: {}", ast, result))
     };
     let reply = reply?;
 

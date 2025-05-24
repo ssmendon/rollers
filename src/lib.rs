@@ -23,6 +23,16 @@ pub mod dice {
             },
         }
 
+        impl Expr {
+            fn is_unit(e: &Expr) -> bool {
+                match e {
+                    Expr::Dice { .. } | Expr::Natural(..) => true,
+                    Expr::Labeled { lhs: expr, .. } | Expr::UnaryMinus(expr) => Self::is_unit(expr),
+                    Expr::BinOp { .. } => false,
+                }
+            }
+        }
+
         impl Display for Expr {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 match self {
@@ -45,6 +55,15 @@ pub mod dice {
             Subtract,
             Multiply,
             Divide,
+        }
+
+        impl Op {
+            fn precedence(op: Op) -> u32 {
+                match op {
+                    Op::Add | Op::Subtract => 6,
+                    Op::Multiply | Op::Divide => 5,
+                }
+            }
         }
 
         #[derive(Error, Debug)]
@@ -76,6 +95,39 @@ pub mod dice {
 
                 write!(f, "{}", tok)
             }
+        }
+
+        pub fn eval(expr: &Expr) -> i64 {
+            let mut rng = rand::rng();
+            eval_inner(expr, &mut rng)
+        }
+
+        fn eval_inner(expr: &Expr, rng: &mut impl rand::Rng) -> i64 {
+            match expr {
+                Expr::Labeled { lhs, .. } => eval_inner(lhs, rng),
+                Expr::UnaryMinus(expr) => -eval_inner(expr, rng),
+                Expr::Dice { count, sides } => roll(rng, *count, *sides),
+                Expr::Natural(x) => *x as i64,
+                Expr::BinOp { lhs, op, rhs } => {
+                    let lhs = eval_inner(&lhs, rng);
+                    let rhs = eval_inner(&rhs, rng);
+
+                    match op {
+                        Op::Add => lhs + rhs,
+                        Op::Subtract => lhs - rhs,
+                        Op::Multiply => lhs * rhs,
+                        Op::Divide => lhs / rhs,
+                    }
+                }
+            }
+        }
+
+        fn roll(rng: &mut impl rand::Rng, count: i32, sides: i32) -> i64 {
+            let mut total = 0;
+            for _ in 0..count {
+                total += rng.random_range(1..=sides) as i64;
+            }
+            total
         }
     }
 
