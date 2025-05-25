@@ -11,6 +11,7 @@ use crate::ast::{Expr, ExprFrame};
 
 /// A container for a [`rand::CryptoRng`], which handles
 /// all requests for dice rolls and expression evaluation.
+#[derive(Debug)]
 pub struct DiceRoller<R: TryCryptoRng = ThreadRng> {
     rng: R,
 }
