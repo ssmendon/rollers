@@ -121,11 +121,6 @@ mod test {
         index: usize,
     }
     // impls for Rng //
-    impl MockCryptoRng {
-        fn new(data: Vec<u64>) -> Self {
-            MockCryptoRng { data, index: 0 }
-        }
-    }
     impl CryptoRng for MockCryptoRng {}
     impl RngCore for MockCryptoRng {
         fn next_u32(&mut self) -> u32 {
