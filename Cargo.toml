@@ -16,16 +16,8 @@ rust-version = "1.87.0"
 
 [workspace]
 members = [
-    "crates/*"
+    "crates/dice-parser"
 ]
 
 [dependencies]
-anyhow = "1.0.98"
-dotenvy = "0.15.7"
-lazy_static = "1.5.0"
-pest = "2.8.0"
-pest_derive = "2.8.0"
-poise = "0.6.1"
-rand = "0.9.1"
-thiserror = "2.0.12"
-tokio = { version = "1.45.0", features = ["full"] }
+dice-parser = { version = "0.1.0", path = "crates/dice-parser" }

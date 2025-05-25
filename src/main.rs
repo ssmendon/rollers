@@ -1,11 +1,8 @@
 use std::io::{self, BufRead as _};
 
-use pest::Parser as _;
-use rollers::dice::{self, parser::Rule, parser::parse_expr};
+use dice_parser::parser::{DiceParser, Parser as _, Rule, parse_expr};
 
 fn main() {
-    pest::set_error_detail(true);
-
     let stdin = io::stdin();
     let mut handle = stdin.lock();
     let mut buffer = String::new();
@@ -16,12 +13,11 @@ fn main() {
             continue;
         }
 
-        match dice::parser::DiceParser::parse(Rule::equation, &buffer) {
+        match DiceParser::parse(Rule::equation, &buffer) {
             Ok(mut pairs) => {
                 let r = parse_expr(pairs.next().unwrap().into_inner());
                 println!("Parsed: {:#?}", r);
-                println!("Roll: {}", r);
-                println!("Normalized: {}", r.normalize());
+                println!("Eval: {}", dice_parser::ast::eval(&r))
             }
             Err(why) => {
                 eprintln!("Parse failed: {:#?}", why);

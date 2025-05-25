@@ -1,5 +1,4 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
-COMMENT    = _{ "/*" ~ (!"]" ~ ANY)* ~ "*/" }
 
 natural = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT{,3} }
 dice    = ${ natural ~ ^"d" ~ natural }

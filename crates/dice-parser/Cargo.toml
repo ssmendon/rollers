@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+lazy_static = "1.5.0"
+pest = "2.8.0"
+pest_derive = "2.8.0"
+rand = "0.9.1"
+recursion = "0.5.2"
