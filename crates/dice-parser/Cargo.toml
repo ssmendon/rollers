@@ -9,3 +9,6 @@ pest = "2.8.0"
 pest_derive = "2.8.0"
 rand = "0.9.1"
 recursion = "0.5.2"
+thiserror = "2.0.12"
+
+[features]

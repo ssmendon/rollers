@@ -20,6 +20,30 @@ lazy_static::lazy_static! {
     };
 }
 
+// fn to_ast<'a, 's>(arena: &'a Bump, pairs: Pairs<'s, Rule>) -> &'a ArenaExprValue<'a, 's> {
+//     PRATT_PARSER
+//         .map_primary(|primary| match primary.as_rule() {
+//             Rule::natural => {
+//                 let v = arena.alloc(ArenaExprValue {
+//                     data: ExprFrame::Int(primary.as_str().parse().unwrap()),
+//                 });
+//                 // let v = arena.alloc(ExprFrame::Int(primary.as_str().parse().unwrap()));
+//                 // ArenaExprValue::<'a, 's> { data: v }
+//                 v
+//             }
+//             Rule::expr => to_ast(arena, primary.into_inner()),
+//             _ => todo!(),
+//         })
+//         .map_infix(|lhs, op, rhs| match op.as_rule() {
+//             Rule::add => {
+//                 let v = arena.alloc(ExprFrame::Add(lhs, rhs));
+//                 todo!()
+//             }
+//             _ => todo!(),
+//         })
+//         .parse(pairs)
+// }
+
 pub fn parse_expr(pairs: Pairs<Rule>) -> Expr {
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {

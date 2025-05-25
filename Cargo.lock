@@ -51,6 +51,7 @@ dependencies = [
  "pest_derive",
  "rand",
  "recursion",
+ "thiserror",
 ]
 
 [[package]]
