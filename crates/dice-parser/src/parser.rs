@@ -1,3 +1,8 @@
+//! Utilities for parsing a dice roll as an [`Expr`].
+//!
+//! The main function is [`parse_expr`], which consumes [`Pairs`]
+//! created by the [`DiceParser::parse`] method.
+
 pub use pest::Parser;
 
 use crate::ast::Expr;
@@ -5,9 +10,14 @@ use pest::{iterators::Pairs, pratt_parser::PrattParser};
 
 #[derive(pest_derive::Parser)]
 #[grammar = "dice.pest"]
+/// The parsing entrypoint.
+///
+/// See the [`Rule::equation`] for the top-level expression.
 pub struct DiceParser;
 
 lazy_static::lazy_static! {
+    /// A [`pest::pratt_parser::PrattParser`] which handles
+    /// operator precedence during parsing.
     static ref PRATT_PARSER: PrattParser<Rule> = {
         use pest::pratt_parser::{Assoc::*, Op};
         use Rule::*;
@@ -20,6 +30,7 @@ lazy_static::lazy_static! {
     };
 }
 
+// TODO: arena-based implementation?
 // fn to_ast<'a, 's>(arena: &'a Bump, pairs: Pairs<'s, Rule>) -> &'a ArenaExprValue<'a, 's> {
 //     PRATT_PARSER
 //         .map_primary(|primary| match primary.as_rule() {
@@ -44,6 +55,29 @@ lazy_static::lazy_static! {
 //         .parse(pairs)
 // }
 
+/// Generates an [`Expr`] from a string.
+///
+/// # Panics
+///
+/// [`pest`] has a number of undocumented panics, so this function inherits that. It may panic!
+///
+/// # Examples
+///
+/// ```
+/// use pest::Parser as _;
+/// use dice_parser::ast::Expr;
+/// use dice_parser::parser::parse_expr;
+/// use dice_parser::parser::DiceParser;
+/// use dice_parser::parser::Rule;
+///
+/// let mut pairs = DiceParser::parse(Rule::equation, "1d20 - 1");
+/// let tree = Expr::sub(Expr::dice(1, 20), Expr::int(1));
+///
+/// if let Ok(mut pairs) = pairs {
+///     let mut pairs = pairs.next().unwrap().into_inner();
+///     assert_eq!(parse_expr(pairs), tree);
+/// }
+/// ```
 pub fn parse_expr(pairs: Pairs<Rule>) -> Expr {
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {

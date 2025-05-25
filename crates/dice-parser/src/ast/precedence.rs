@@ -1,9 +1,21 @@
+//! Helpers for comparing the precedence of operations.
+//!
+//! This contains two main types and various helper methods for
+//! converting between them: [`BinOp`] and [`Op`].
+//!
+//! The most important method in this file is [`BinOp::needs_parenthesis`], which
+//! is used in [`Expr`]'s [`std::fmt::Display`] implementation to remove redundant
+//! parenthesis.
+
 use super::Expr;
 
+/// A precedence value.
 type Prec = i32;
 
+/// The operations defined in the grammar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Op {
+    /// Corresponds to a no-op (e.g. a dice roll or integer).
     Empty,
     Not,
     Label,
@@ -13,6 +25,7 @@ pub enum Op {
     Div,
 }
 
+/// Only binary operations in the grammar.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BinOp {
     Add,
@@ -21,24 +34,8 @@ pub enum BinOp {
     Div,
 }
 
-impl TryFrom<Expr<'_>> for Op {
-    type Error = ();
-
-    fn try_from(value: Expr<'_>) -> Result<Self, Self::Error> {
-        match value {
-            Expr::Int(_) => Err(()),
-            Expr::Dice(_, _) => Err(()),
-            Expr::Not(..) => Ok(Op::Not),
-            Expr::Label(..) => Ok(Op::Label),
-            Expr::Add(..) => Ok(Op::Add),
-            Expr::Sub(..) => Ok(Op::Sub),
-            Expr::Mul(..) => Ok(Op::Mul),
-            Expr::Div(..) => Ok(Op::Div),
-        }
-    }
-}
-
 impl Op {
+    /// Turns an [`Expr`] into an [`Op`].
     pub const fn from_expr(expr: &Expr<'_>) -> Self {
         match expr {
             Expr::Int(_) | Expr::Dice(_, _) => Self::Empty,
@@ -51,18 +48,22 @@ impl Op {
         }
     }
 
+    /// Turns an [`Op`] into a [`Prec`].
+    ///
+    /// Higher numbers have a higher binding precedence.
     pub const fn prec(&self) -> Prec {
         match self {
-            Op::Not => 20,
+            Op::Empty => 0,
             Op::Label => 10,
+            Op::Not => 20,
             Op::Add => 40,
             Op::Sub => 40,
             Op::Mul => 30,
             Op::Div => 30,
-            Op::Empty => 0,
         }
     }
 
+    /// Turns an [`Op`] into a [`BinOp`], or [`Option::None`] if it's not a binary operation.
     pub const fn as_binop(&self) -> Option<BinOp> {
         match self {
             Op::Empty | Op::Not | Op::Label => None,
@@ -75,6 +76,7 @@ impl Op {
 }
 
 impl BinOp {
+    /// The string representation of the operator.
     pub const fn as_str(&self) -> &'static str {
         match self {
             BinOp::Add => "+",
@@ -84,6 +86,7 @@ impl BinOp {
         }
     }
 
+    /// Turns a [`BinOp`] into an [`Op`].
     pub const fn as_op(&self) -> Op {
         match self {
             BinOp::Add => Op::Add,
@@ -93,18 +96,26 @@ impl BinOp {
         }
     }
 
+    /// See [`Op::prec`].
     pub const fn prec(&self) -> Prec {
         self.as_op().prec()
     }
 
+    /// Determines, for a given parent `me`, left child `lop`, and right child `rop` whether parenthesis are needed.
+    ///
+    /// For an example of its use, see the [`std::fmt::Display`] implementation for [`Expr`].
+    ///
+    /// # Algorithm
+    /// - If a branch's precedence is equal to `me`, and `me` is `BinOp::sub` or `BinOp::div`, we need parenthesis.
+    /// - If a branch's precedence is lower than `me`, it needs parenthesis.
+    ///
+    /// Taken from: @worldterminator in <https://stackoverflow.com/a/58679340>
     pub const fn needs_parenthesis(me: BinOp, lop: Op, rop: Op) -> (bool, bool) {
         let lop = lop.prec();
         let rop = rop.prec()
             + match me {
-                BinOp::Add => 0,
-                BinOp::Sub => 1,
-                BinOp::Mul => 0,
-                BinOp::Div => 1,
+                BinOp::Sub | BinOp::Div => 1, // add '1', so it's not the same precedence
+                BinOp::Add | BinOp::Mul => 0,
             };
         let me = me.prec();
 
