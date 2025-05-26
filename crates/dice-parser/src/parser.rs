@@ -111,11 +111,6 @@ pub fn parse_expr(pairs: Pairs<Rule>) -> Expr {
         })
         .map_postfix(|lhs, op| match op.as_rule() {
             Rule::label => {
-                // Forbid labelling a label by silently dropping it.
-                if matches!(lhs, Expr::Label(..)) {
-                    return lhs;
-                }
-
                 let msg = op.into_inner().as_str().trim();
                 if msg.is_empty() {
                     lhs
@@ -145,23 +140,18 @@ impl Display for TokenLocation {
 
 impl<'s> From<Span<'s>> for TokenLocation {
     fn from(value: Span) -> Self {
-        let s = Self {
+        Self {
             input: value.get_input().to_owned(),
             start: value.start(),
             end: value.end(),
-        };
-
-        assert!(s.input.len() < s.end);
-        assert!(s.start >= 0);
-
-        s
+        }
     }
 }
 
 // TODO: error handling during parsing of large numbers
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {
-    #[error("number must be < 4 digits, got: `{span}`")]
+    #[error("number must be < 4 digits, got: `{span:?}`")]
     IntTooLong { span: TokenLocation },
     #[error("{0}")]
     ParseIntError(#[from] std::num::ParseIntError),
@@ -223,10 +213,10 @@ pub fn try_parse_to_ast(pairs: Pairs<Rule>) -> Result<Expr<'_>, ParseError> {
             _ => unreachable!(),
         })
         .map_infix(|lhs, op, rhs| match op.as_rule() {
-            Rule::add => (),
-            Rule::subtract => (),
-            Rule::multiply => (),
-            Rule::divide => (),
+            Rule::add => Ok(Expr::add(lhs?, rhs?)),
+            Rule::subtract => Ok(Expr::sub(lhs?, rhs?)),
+            Rule::multiply => Ok(Expr::mul(lhs?, rhs?)),
+            Rule::divide => Ok(Expr::div(lhs?, rhs?)),
             _ => unreachable!(),
         })
         .map_prefix(|op, rhs| match op.as_rule() {
@@ -236,7 +226,11 @@ pub fn try_parse_to_ast(pairs: Pairs<Rule>) -> Result<Expr<'_>, ParseError> {
         .map_postfix(|lhs, op| match op.as_rule() {
             Rule::label => {
                 let msg = op.into_inner().as_str().trim();
-                if msg.is_empty() {}
+                if msg.is_empty() {
+                    Ok(lhs?)
+                } else {
+                    Ok(Expr::label(lhs?, msg))
+                }
             }
             _ => unreachable!(),
         })

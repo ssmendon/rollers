@@ -7,7 +7,7 @@
 use rand::{Rng, TryCryptoRng, rngs::ThreadRng};
 use recursion::CollapsibleExt as _;
 
-use crate::ast::{Expr, ExprFrame};
+use crate::ast::{Expr, ExprFrame, precedence::Op};
 
 /// A container for a [`rand::CryptoRng`], which handles
 /// all requests for dice rolls and expression evaluation.
@@ -51,20 +51,47 @@ impl<R: TryCryptoRng + Rng> DiceRoller<R> {
     }
 
     /// This is a non-panicking version of [`Self::eval`].
-    pub fn try_eval(&mut self, e: &Expr) -> Result<i64, DivideByZeroError> {
+    pub fn try_eval(&mut self, e: &Expr) -> Result<i64, ArithmeticError> {
         e.try_collapse_frames(|frame| match frame {
             ExprFrame::Int(x) => Ok(x as i64),
             ExprFrame::Dice(c, s) => Ok(self.roll(c, s)),
             ExprFrame::Not(rhs) => Ok(-rhs),
             ExprFrame::Label(lhs, _) => Ok(lhs),
-            ExprFrame::Add(lhs, rhs) => Ok(lhs + rhs),
-            ExprFrame::Sub(lhs, rhs) => Ok(lhs - rhs),
-            ExprFrame::Mul(lhs, rhs) => Ok(lhs * rhs),
+            ExprFrame::Add(lhs, rhs) => lhs.checked_add(rhs).map_or_else(
+                || {
+                    Err(ArithmeticError::Overflow {
+                        lhs: Some(lhs),
+                        op: Op::Add,
+                        rhs: Some(rhs),
+                    })
+                },
+                |x| Ok(x),
+            ),
+            ExprFrame::Sub(lhs, rhs) => lhs.checked_sub(rhs).map_or_else(
+                || {
+                    Err(ArithmeticError::Overflow {
+                        lhs: Some(lhs),
+                        op: Op::Sub,
+                        rhs: Some(rhs),
+                    })
+                },
+                |x| Ok(x),
+            ),
+            ExprFrame::Mul(lhs, rhs) => lhs.checked_mul(rhs).map_or_else(
+                || {
+                    Err(ArithmeticError::Overflow {
+                        lhs: Some(lhs),
+                        op: Op::Mul,
+                        rhs: Some(rhs),
+                    })
+                },
+                |x| Ok(x),
+            ),
             ExprFrame::Div(lhs, rhs) => {
                 if rhs != 0 {
                     Ok(lhs / rhs)
                 } else {
-                    Err(DivideByZeroError(lhs))
+                    Err(ArithmeticError::DivideByZero(lhs))
                 }
             }
         })
@@ -99,6 +126,18 @@ impl Default for DiceRoller {
     fn default() -> Self {
         Self { rng: rand::rng() }
     }
+}
+
+#[derive(thiserror::Error, Debug, PartialEq)]
+pub enum ArithmeticError {
+    #[error("tried to divide `{0}` by 0")]
+    DivideByZero(i64),
+    #[error("overflow performing `{op}` on lhs: `{lhs:?}` and rhs: `{rhs:?}`")]
+    Overflow {
+        lhs: Option<i64>,
+        op: Op,
+        rhs: Option<i64>,
+    },
 }
 
 /// Represents what we attempted to divide by zero.
@@ -152,7 +191,7 @@ mod test {
         let tree = Expr::div(Expr::dice(1, 20), Expr::int(0));
         let mut dr = DiceRoller::new(MockCryptoRng::default());
 
-        assert_eq!(dr.try_eval(&tree), Err(DivideByZeroError(1)))
+        assert_eq!(dr.try_eval(&tree), Err(ArithmeticError::DivideByZero(1)))
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use dice_parser::{
-    ast::Expr,
-    eval::{DiceRoller, DivideByZeroError},
+    ast::{Expr, precedence::Op},
+    eval::{ArithmeticError, DiceRoller, DivideByZeroError},
 };
 use proptest::{
     prelude::{Strategy, any},
@@ -11,7 +11,7 @@ use rand::{Rng, TryCryptoRng};
 pub fn naive_try_eval<R: TryCryptoRng + Rng>(
     roller: &mut DiceRoller<R>,
     expr: &Expr,
-) -> Result<i64, DivideByZeroError> {
+) -> Result<i64, ArithmeticError> {
     match expr {
         Expr::Int(x) => Ok(*x as i64),
         Expr::Dice(c, s) => Ok(roller.roll(*c, *s)),
@@ -23,12 +23,39 @@ pub fn naive_try_eval<R: TryCryptoRng + Rng>(
 
             {
                 match expr {
-                    Expr::Add(..) => Ok(left + right),
-                    Expr::Sub(..) => Ok(left - right),
-                    Expr::Mul(..) => Ok(left * right),
+                    Expr::Add(..) => left.checked_add(right).map_or_else(
+                        || {
+                            Err(ArithmeticError::Overflow {
+                                lhs: Some(left),
+                                op: Op::Add,
+                                rhs: Some(right),
+                            })
+                        },
+                        |x| Ok(x),
+                    ),
+                    Expr::Sub(..) => left.checked_sub(right).map_or_else(
+                        || {
+                            Err(ArithmeticError::Overflow {
+                                lhs: Some(left),
+                                op: Op::Sub,
+                                rhs: Some(right),
+                            })
+                        },
+                        |x| Ok(x),
+                    ),
+                    Expr::Mul(..) => left.checked_mul(right).map_or_else(
+                        || {
+                            Err(ArithmeticError::Overflow {
+                                lhs: Some(left),
+                                op: Op::Mul,
+                                rhs: Some(right),
+                            })
+                        },
+                        |x| Ok(x),
+                    ),
                     Expr::Div(..) => {
                         if right == 0 {
-                            Err(DivideByZeroError::new(left))
+                            Err(ArithmeticError::DivideByZero(left))
                         } else {
                             Ok(left / right)
                         }

@@ -7,6 +7,8 @@
 //! is used in [`Expr`]'s [`std::fmt::Display`] implementation to remove redundant
 //! parenthesis.
 
+use std::fmt::Display;
+
 use super::Expr;
 
 /// A precedence value.
@@ -23,6 +25,22 @@ pub enum Op {
     Sub,
     Mul,
     Div,
+}
+
+impl Display for Op {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Op::Empty => "noop",
+            Op::Not => "negate",
+            Op::Label => "[label]",
+            Op::Add => "+",
+            Op::Sub => "-",
+            Op::Mul => "*",
+            Op::Div => "/",
+        };
+
+        write!(f, "{}", s)
+    }
 }
 
 /// Only binary operations in the grammar.

@@ -1,6 +1,6 @@
 use std::io::{self, BufRead as _};
 
-use dice_parser::parser::{DiceParser, Parser as _, Rule, parse_expr};
+use dice_parser::parser::{DiceParser, Parser as _, Rule, parse_expr, try_parse_to_ast};
 
 fn main() {
     let stdin = io::stdin();
@@ -17,14 +17,19 @@ fn main() {
 
         match DiceParser::parse(Rule::equation, &buffer) {
             Ok(mut pairs) => {
-                let r = parse_expr(pairs.next().unwrap().into_inner());
-                println!("Parsed: {:?}", r);
-                println!("Normalized: {}", r);
+                let r = try_parse_to_ast(pairs.next().unwrap().into_inner());
 
-                dr.try_eval(&r).map_or_else(
-                    |err| eprintln!("Eval failed: {:?}", err),
-                    |res| println!("Eval: {}", res),
-                );
+                if let Ok(r) = r {
+                    println!("Parsed: {:?}", r);
+                    println!("Normalized: {}", r);
+
+                    dr.try_eval(&r).map_or_else(
+                        |err| eprintln!("Eval failed: {:?}", err),
+                        |res| println!("Eval: {}", res),
+                    );
+                } else {
+                    eprintln!("{}", r.unwrap_err())
+                }
             }
             Err(why) => {
                 eprintln!("Parse failed: {:#?}", why);

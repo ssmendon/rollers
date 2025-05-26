@@ -1,6 +1,6 @@
 //! The [`Expr`] and [`ExprFrame`] types for working with a parsed dice roll.
 
-pub(crate) mod precedence;
+pub mod precedence;
 pub(crate) mod util;
 
 pub mod display;

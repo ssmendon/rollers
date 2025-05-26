@@ -11,7 +11,7 @@ natural = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* | ASCII_DIGIT }
 dice = ${ natural ~ ^"d" ~ natural }
 /// Parses a dice string, a number, or a parenthesized expression.
 primary = _{ dice | natural | "(" ~ expr ~ ")" }
-atom    = _{ unary_op? ~ primary ~ postfix_op? }
+atom    = _{ unary_op* ~ primary ~ postfix_op* }
 
 /// A `postfix_op` binds to the right of a [`Rule::primary`].
 postfix_op = _{ label }
@@ -19,7 +19,7 @@ postfix_op = _{ label }
 label      =  {
     "[" ~ label_text ~ "]"
 }
-label_text =  { (!"]" ~ ASCII)* } // enforce ascii-only, to avoid parsing panics
+label_text =  { (!("]" | "[") ~ ASCII)* } // enforce ascii-only, to avoid parsing panics
 
 /// A `unary_op` binds to the left of a [`Rule::primary`].
 unary_op    = _{ unary_minus }
