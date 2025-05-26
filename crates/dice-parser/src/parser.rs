@@ -3,10 +3,12 @@
 //! The main function is [`parse_expr`], which consumes [`Pairs`]
 //! created by the [`DiceParser::parse`] method.
 
+use std::fmt::Display;
+
 pub use pest::Parser;
 
 use crate::ast::Expr;
-use pest::{iterators::Pairs, pratt_parser::PrattParser};
+use pest::{Span, iterators::Pairs, pratt_parser::PrattParser};
 
 #[derive(pest_derive::Parser)]
 #[grammar = "dice.pest"]
@@ -128,15 +130,47 @@ pub fn parse_expr(pairs: Pairs<Rule>) -> Expr {
         .parse(pairs)
 }
 
-// TODO: error handling during parsing of large numbers
-#[derive(Debug, thiserror::Error)]
-#[error("")]
-pub enum ParseError<'a> {
-    ParseIntError { span: pest::Span<'a> },
+#[derive(Debug)]
+pub struct TokenLocation {
+    input: String,
+    start: usize,
+    end: usize,
 }
 
-pub fn try_parse_to_ast(pairs: Pairs<Rule>) {
-    let why = PRATT_PARSER
+impl Display for TokenLocation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", "")
+    }
+}
+
+impl<'s> From<Span<'s>> for TokenLocation {
+    fn from(value: Span) -> Self {
+        let s = Self {
+            input: value.get_input().to_owned(),
+            start: value.start(),
+            end: value.end(),
+        };
+
+        assert!(s.input.len() < s.end);
+        assert!(s.start >= 0);
+
+        s
+    }
+}
+
+// TODO: error handling during parsing of large numbers
+#[derive(Debug, thiserror::Error)]
+pub enum ParseError {
+    #[error("number must be < 4 digits, got: `{span}`")]
+    IntTooLong { span: TokenLocation },
+    #[error("{0}")]
+    ParseIntError(#[from] std::num::ParseIntError),
+    #[error("number `{0}` is <= 0")]
+    OutOfRange(i32),
+}
+
+pub fn try_parse_to_ast(pairs: Pairs<Rule>) -> Result<Expr<'_>, ParseError> {
+    PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {
             Rule::dice => {
                 let mut iter = primary.into_inner();
@@ -144,17 +178,67 @@ pub fn try_parse_to_ast(pairs: Pairs<Rule>) {
                 let sides_tok = iter.next().unwrap();
 
                 if count_tok.as_str().len() > 4 {
-                    return Err(ParseError::ParseIntError {
-                        span: count_tok.as_span(),
+                    return Err(ParseError::IntTooLong {
+                        span: count_tok.as_span().into(),
                     });
                 }
                 if sides_tok.as_str().len() > 4 {
-                    return Ok(1);
+                    return Err(ParseError::IntTooLong {
+                        span: sides_tok.as_span().into(),
+                    });
                 }
 
-                todo!()
+                let count = count_tok
+                    .as_str()
+                    .parse::<i32>()
+                    .map_err(|why| ParseError::ParseIntError(why))?;
+                if count <= 0 {
+                    return Err(ParseError::OutOfRange(count));
+                }
+
+                let sides = sides_tok
+                    .as_str()
+                    .parse::<i32>()
+                    .map_err(|why| ParseError::ParseIntError(why))?;
+                if sides <= 0 {
+                    return Err(ParseError::OutOfRange(sides));
+                }
+
+                Ok(Expr::Dice(count, sides))
+            }
+            Rule::natural => {
+                if primary.as_str().len() > 4 {
+                    Err(ParseError::IntTooLong {
+                        span: primary.as_span().into(),
+                    })
+                } else {
+                    primary
+                        .as_str()
+                        .parse::<i32>()
+                        .map_err(|e| ParseError::ParseIntError(e))
+                        .map(|x| Expr::Int(x))
+                }
+            }
+            Rule::expr => try_parse_to_ast(primary.into_inner()),
+            _ => unreachable!(),
+        })
+        .map_infix(|lhs, op, rhs| match op.as_rule() {
+            Rule::add => (),
+            Rule::subtract => (),
+            Rule::multiply => (),
+            Rule::divide => (),
+            _ => unreachable!(),
+        })
+        .map_prefix(|op, rhs| match op.as_rule() {
+            Rule::unary_minus => Ok(Expr::not(rhs?)),
+            _ => unreachable!(),
+        })
+        .map_postfix(|lhs, op| match op.as_rule() {
+            Rule::label => {
+                let msg = op.into_inner().as_str().trim();
+                if msg.is_empty() {}
             }
             _ => unreachable!(),
         })
-        .parse(pairs);
+        .parse(pairs)
 }
