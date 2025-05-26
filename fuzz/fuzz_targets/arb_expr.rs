@@ -40,7 +40,13 @@ fuzz_target!(|data: Expr| {
             let mut r1 = DiceRoller::new(MockCryptoRng::new(&[1, 2, 3, 4]));
             let mut r2 = DiceRoller::new(MockCryptoRng::new(&[1, 2, 3, 4]));
 
-            assert_eq!(r1.try_eval(&data), r2.try_eval(&tree));
+            assert_eq!(
+                r1.try_eval(&data),
+                r2.try_eval(&tree),
+                "reparsed tree has different eval: `{}` vs. `{}`",
+                data,
+                tree
+            );
         }
     }
 });

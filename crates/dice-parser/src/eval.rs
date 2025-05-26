@@ -54,7 +54,13 @@ impl<R: TryCryptoRng + Rng> DiceRoller<R> {
     pub fn try_eval(&mut self, e: &Expr) -> Result<i64, ArithmeticError> {
         e.try_collapse_frames(|frame| match frame {
             ExprFrame::Int(x) => Ok(x as i64),
-            ExprFrame::Dice(c, s) => Ok(self.roll(c, s)),
+            ExprFrame::Dice(c, s) => {
+                if c <= 0 || s <= 0 {
+                    Err(ArithmeticError::NegativeDie(c, s))
+                } else {
+                    Ok(self.roll(c, s))
+                }
+            }
             ExprFrame::Not(rhs) => Ok(-rhs),
             ExprFrame::Label(lhs, _) => Ok(lhs),
             ExprFrame::Add(lhs, rhs) => lhs.checked_add(rhs).map_or_else(
@@ -130,6 +136,8 @@ impl Default for DiceRoller {
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum ArithmeticError {
+    #[error("tried to roll a negative die: `{0}d{1}`")]
+    NegativeDie(i32, i32),
     #[error("tried to divide `{0}` by 0")]
     DivideByZero(i64),
     #[error("overflow performing `{op}` on lhs: `{lhs:?}` and rhs: `{rhs:?}`")]
