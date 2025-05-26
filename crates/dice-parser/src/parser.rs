@@ -127,3 +127,34 @@ pub fn parse_expr(pairs: Pairs<Rule>) -> Expr {
         })
         .parse(pairs)
 }
+
+// TODO: error handling during parsing of large numbers
+#[derive(Debug, thiserror::Error)]
+#[error("")]
+pub enum ParseError<'a> {
+    ParseIntError { span: pest::Span<'a> },
+}
+
+pub fn try_parse_to_ast(pairs: Pairs<Rule>) {
+    let why = PRATT_PARSER
+        .map_primary(|primary| match primary.as_rule() {
+            Rule::dice => {
+                let mut iter = primary.into_inner();
+                let count_tok = iter.next().unwrap();
+                let sides_tok = iter.next().unwrap();
+
+                if count_tok.as_str().len() > 4 {
+                    return Err(ParseError::ParseIntError {
+                        span: count_tok.as_span(),
+                    });
+                }
+                if sides_tok.as_str().len() > 4 {
+                    return Ok(1);
+                }
+
+                todo!()
+            }
+            _ => unreachable!(),
+        })
+        .parse(pairs);
+}

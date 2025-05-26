@@ -16,8 +16,9 @@ rust-version = "1.87.0"
 
 [workspace]
 members = [
+    "fuzz",
     "crates/dice-parser"
-]
+, "crates/dice-mocks"]
 
 [dependencies]
 dice-parser = { version = "0.1.0", path = "crates/dice-parser" }

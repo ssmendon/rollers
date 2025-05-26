@@ -45,6 +45,7 @@ impl<R: TryCryptoRng + Rng> DiceRoller<R> {
     /// let result = dice_roller.roll(2, 20); // 2d20
     /// assert!(result >= 2 && result <= 40);
     /// ```
+    #[inline(always)]
     pub fn roll(&mut self, c: i32, s: i32) -> i64 {
         (0..c).fold(0 as i64, |acc, _| acc + self.rng.random_range(1..=s) as i64)
     }
@@ -54,13 +55,13 @@ impl<R: TryCryptoRng + Rng> DiceRoller<R> {
         e.try_collapse_frames(|frame| match frame {
             ExprFrame::Int(x) => Ok(x as i64),
             ExprFrame::Dice(c, s) => Ok(self.roll(c, s)),
-            ExprFrame::Not(rhs) => Ok(rhs),
+            ExprFrame::Not(rhs) => Ok(-rhs),
             ExprFrame::Label(lhs, _) => Ok(lhs),
             ExprFrame::Add(lhs, rhs) => Ok(lhs + rhs),
             ExprFrame::Sub(lhs, rhs) => Ok(lhs - rhs),
             ExprFrame::Mul(lhs, rhs) => Ok(lhs * rhs),
             ExprFrame::Div(lhs, rhs) => {
-                if rhs > 0 {
+                if rhs != 0 {
                     Ok(lhs / rhs)
                 } else {
                     Err(DivideByZeroError(lhs))
@@ -80,12 +81,10 @@ impl<R: TryCryptoRng + Rng> DiceRoller<R> {
     /// is stack safe as it is not recursively defined.
     /// ```
     pub fn eval(&mut self, e: &Expr) -> i64 {
-        e.collapse_frames(|frame| match frame {
+        e.collapse_frames(|frame: ExprFrame<'_, i64>| match frame {
             ExprFrame::Int(x) => x as i64,
-            ExprFrame::Dice(c, s) => {
-                (0..c).fold(0 as i64, |acc, _| acc + self.rng.random_range(1..=s) as i64)
-            }
-            ExprFrame::Not(rhs) => rhs,
+            ExprFrame::Dice(c, s) => self.roll(c, s),
+            ExprFrame::Not(rhs) => -rhs,
             ExprFrame::Label(lhs, _) => lhs,
             ExprFrame::Add(lhs, rhs) => lhs + rhs,
             ExprFrame::Sub(lhs, rhs) => lhs - rhs,
@@ -106,46 +105,16 @@ impl Default for DiceRoller {
 #[derive(thiserror::Error, Debug, PartialEq)]
 #[error("tried to divide {0} by 0")]
 pub struct DivideByZeroError(i64);
+impl DivideByZeroError {
+    pub fn new(numerator: i64) -> Self {
+        Self(numerator)
+    }
+}
 
 #[cfg(test)]
 mod test {
-    use rand::{CryptoRng, RngCore, rand_core};
-
     use super::*;
-
-    /// An RNG that will always roll a '1'.
-    ///
-    /// See the [`rng`] crate's book: https://rust-random.github.io/book/guide-test-fn-rng.html
-    #[derive(Clone, Debug)]
-    struct MockCryptoRng {
-        data: Vec<u64>,
-        index: usize,
-    }
-    // impls for Rng //
-    impl CryptoRng for MockCryptoRng {}
-    impl RngCore for MockCryptoRng {
-        fn next_u32(&mut self) -> u32 {
-            self.next_u64() as u32
-        }
-        fn next_u64(&mut self) -> u64 {
-            let r = *self.data.get(self.index).unwrap_or(&0);
-            self.index = (self.index + 1) % self.data.len();
-            r
-        }
-        fn fill_bytes(&mut self, dst: &mut [u8]) {
-            rand_core::impls::fill_bytes_via_next(self, dst);
-        }
-    }
-    impl Default for MockCryptoRng {
-        /// Always rolls a '1'!
-        fn default() -> Self {
-            Self {
-                data: vec![5, 5, 5, 5],
-                index: Default::default(),
-            }
-        }
-    }
-    // end impls for Rng //
+    use dice_mocks::*;
 
     #[test]
     fn test_roll_with_mock_rng() {
@@ -159,10 +128,7 @@ mod test {
     #[test]
     fn test_try_eval() {
         // 1d20 + (-(4+4)/2 * (0 - 5d20)["subtraction"])
-        // 1d20 - 4 * -5d20
-        // 1 - 4 * -5
-        // 1 - 20
-        // -19
+        // 21
         let tree = Expr::add(
             Expr::dice(1, 20),
             Expr::mul(
@@ -177,7 +143,7 @@ mod test {
         let mock_rng = MockCryptoRng::default();
         let mut dr = DiceRoller::new(mock_rng);
 
-        assert_eq!(dr.try_eval(&tree), Ok(-19));
+        assert_eq!(dr.try_eval(&tree), Ok(21));
     }
 
     #[test]

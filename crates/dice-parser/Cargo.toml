@@ -4,11 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+arbitrary = { version = "1.4.1", optional = true, features = ["derive"] }
 lazy_static = "1.5.0"
 pest = "2.8.0"
 pest_derive = "2.8.0"
 rand = "0.9.1"
 recursion = "0.5.2"
 thiserror = "2.0.12"
+
+[dev-dependencies]
+dice-mocks = { path = "../dice-mocks" }
+proptest = "1"
 
 [features]

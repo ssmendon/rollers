@@ -19,23 +19,23 @@ impl Expr<'_> {
     }
 
     /// Creates a [`Expr::Add`] with a [`Box`].
-    pub fn add(rhs: Self, lhs: Self) -> Self {
-        Self::Add(Box::new(rhs), Box::new(lhs))
+    pub fn add(lhs: Self, rhs: Self) -> Self {
+        Self::Add(Box::new(lhs), Box::new(rhs))
     }
 
     /// Creates a [`Expr::Sub`] with a [`Box`].
-    pub fn sub(rhs: Self, lhs: Self) -> Self {
-        Self::Sub(Box::new(rhs), Box::new(lhs))
+    pub fn sub(lhs: Self, rhs: Self) -> Self {
+        Self::Sub(Box::new(lhs), Box::new(rhs))
     }
 
     /// Creates a [`Expr::Mul`] with a [`Box`].
-    pub fn mul(rhs: Self, lhs: Self) -> Self {
-        Self::Mul(Box::new(rhs), Box::new(lhs))
+    pub fn mul(lhs: Self, rhs: Self) -> Self {
+        Self::Mul(Box::new(lhs), Box::new(rhs))
     }
 
     /// Creates a [`Expr::Div`] with a [`Box`].
-    pub fn div(rhs: Self, lhs: Self) -> Self {
-        Self::Div(Box::new(rhs), Box::new(lhs))
+    pub fn div(lhs: Self, rhs: Self) -> Self {
+        Self::Div(Box::new(lhs), Box::new(rhs))
     }
 }
 

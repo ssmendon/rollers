@@ -1,0 +1,31 @@
+[package]
+name = "dice-parser-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+dice-mocks = { version = "0.1.0", path = "../crates/dice-mocks" }
+libfuzzer-sys = "0.4"
+recursion = "0.5.2"
+
+[dependencies.dice-parser]
+path = "../crates/dice-parser"
+features = ["arbitrary"]
+
+[[bin]]
+name = "pratt_parsing"
+path = "fuzz_targets/pratt_parsing.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "arb_expr"
+path = "fuzz_targets/arb_expr.rs"
+test = false
+doc = false
+bench = false

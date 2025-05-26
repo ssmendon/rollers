@@ -1,0 +1,9 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc e336357a1ac0755262ef8217dda3dd976e53c13f9805baf2318b2bf1dc30c2cb # shrinks to expr = Not(Int(-1)), seed = [1]
+cc e8bcfc2af60e622809f21186412e92f90a8b976a9281933002758668439ca072 # shrinks to expr = Div(Int(0), Add(Int(0), Int(-1))), seed = [1]
+cc ab45453f1fe39c27828c31fb09c5e17272e60c9a4411855a52a005dc2ee9e023 # shrinks to expr = Sub(Div(Int(0), Int(0)), Int(0)), seed = [1]

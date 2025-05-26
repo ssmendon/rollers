@@ -19,7 +19,7 @@ postfix_op = _{ label }
 label      =  {
     "[" ~ label_text ~ "]"
 }
-label_text =  { (!"]" ~ ANY)* }
+label_text =  { (!"]" ~ ASCII)* } // enforce ascii-only, to avoid parsing panics
 
 /// A `unary_op` binds to the left of a [`Rule::primary`].
 unary_op    = _{ unary_minus }

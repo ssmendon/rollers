@@ -13,7 +13,8 @@ use recursion::CollapsibleExt as _;
 ///
 /// The `'s` lifetime is tied to the lifetime of the parsed
 /// string.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum Expr<'s> {
     Int(i32),
     Dice(i32, i32),
@@ -39,7 +40,8 @@ impl Expr<'_> {
 /// A single level in the [`Expr`] tree.
 ///
 /// See [`recursion::MappableFrame`] for more details.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum ExprFrame<'s, A> {
     Int(i32),
     Dice(i32, i32),
