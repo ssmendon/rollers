@@ -8,8 +8,6 @@ use dice_parser::{
 };
 use libfuzzer_sys::fuzz_target;
 
-fn tmp() {}
-
 fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {
         let pairs = DiceParser::parse(Rule::equation, s);
