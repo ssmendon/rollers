@@ -4,6 +4,8 @@
 //! 1. The [`eval`] function, which panics on division by zero.
 //! 2. The [`try_eval`] function, which returns a [`DivideByZeroError`].
 
+mod visualize;
+
 use rand::{Rng, TryCryptoRng, rngs::ThreadRng};
 use recursion::CollapsibleExt as _;
 
