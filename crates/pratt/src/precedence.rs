@@ -74,7 +74,7 @@ where
         let (power, fold_prefix) = prefix.parse_next(i)?;
         // infinite loop check: the parser must always consume
         if i.eof_offset() == len {
-            return Err(E::assert(&i, "`prefix` parsers must always consume"));
+            return Err(E::assert(i, "`prefix` parsers must always consume"));
         }
         let operand = precedence_impl(i, parse_operand, prefix, postfix, infix, power)?;
         fold_prefix(i, operand)?
