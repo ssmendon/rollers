@@ -1,7 +1,7 @@
 use winnow::{
-    Parser,
+    Parser, Result,
     combinator::{opt, trace},
-    error::{ErrMode, ParserError},
+    error::ParserError,
     stream::{Stream, StreamIsPartial},
 };
 
@@ -21,9 +21,9 @@ pub fn precedence<I, ParseOperand, ParseInfix, ParsePrefix, ParsePostfix, Operan
 where
     I: Stream + StreamIsPartial,
     ParseOperand: Parser<I, Operand, E>,
-    ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> PResult<Operand, E>), E>,
-    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> PResult<Operand, E>), E>,
-    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> PResult<Operand, E>), E>,
+    ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> Result<Operand, E>), E>,
+    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
     E: ParserError<I>,
 {
     trace("precedence", move |i: &mut I| {
@@ -54,13 +54,13 @@ fn precedence_impl<I, ParseOperand, ParseInfix, ParsePrefix, ParsePostfix, Opera
     postfix: &mut ParsePostfix,
     infix: &mut ParseInfix,
     min_power: i64,
-) -> PResult<Operand, E>
+) -> Result<Operand, E>
 where
     I: Stream + StreamIsPartial,
     ParseOperand: Parser<I, Operand, E>,
-    ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> PResult<Operand, E>), E>,
-    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> PResult<Operand, E>), E>,
-    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> PResult<Operand, E>), E>,
+    ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> Result<Operand, E>), E>,
+    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
     E: ParserError<I>,
 {
     let operand = opt(parse_operand.by_ref()).parse_next(i)?;
@@ -72,7 +72,7 @@ where
         let (power, fold_prefix) = prefix.parse_next(i)?;
         // infinite loop check: the parser must always consume
         if i.eof_offset() == len {
-            return Err(ErrMode::assert(i, "`prefix` parsers must always consume"));
+            return Err(E::assert(&i, "`prefix` parsers must always consume"));
         }
         let operand = precedence_impl(i, parse_operand, prefix, postfix, infix, power)?;
         fold_prefix(i, operand)?
@@ -130,11 +130,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::ascii::{digit1, space0};
-    use crate::combinator::{delimited, empty, fail, peek};
-    use crate::dispatch;
-    use crate::error::ContextError;
-    use crate::token::any;
+    use winnow::ascii::{digit1, space0};
+    use winnow::combinator::{delimited, empty, fail, peek};
+    use winnow::dispatch;
+    use winnow::error::ContextError;
+    use winnow::token::any;
 
     use super::*;
 
@@ -190,8 +190,8 @@ mod tests {
 
     #[test]
     fn test_precedence() {
-        // assert_eq!(parser().parse("-3!+-3 *  4"), Ok(-18));
-        // assert_eq!(parser().parse("+2 + 3 *  4"), Ok(14));
+        assert_eq!(parser().parse("-3!+-3 *  4"), Ok(-18));
+        assert_eq!(parser().parse("+2 + 3 *  4"), Ok(14));
         assert_eq!(parser().parse("2 * 3+4"), Ok(10));
     }
     #[test]

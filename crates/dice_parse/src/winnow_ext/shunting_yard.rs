@@ -1,7 +1,7 @@
-use winnow::Parser;
 use winnow::combinator::opt;
-use winnow::error::{ErrMode, ParserError};
+use winnow::error::ParserError;
 use winnow::stream::{Stream, StreamIsPartial};
+use winnow::{Parser, Result};
 
 use super::precedence::Assoc;
 use winnow::combinator::trace;
@@ -16,9 +16,9 @@ pub fn precedence<I, ParseOperand, ParseInfix, ParsePrefix, ParsePostfix, Operan
 where
     I: Stream + StreamIsPartial,
     ParseOperand: Parser<I, Operand, E>,
-    ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> PResult<Operand, E>), E>,
-    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> PResult<Operand, E>), E>,
-    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> PResult<Operand, E>), E>,
+    ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> Result<Operand, E>), E>,
+    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
     E: ParserError<I>,
 {
     trace("precedence", move |i: &mut I| {
@@ -41,13 +41,13 @@ fn shunting_yard<I, ParseOperand, ParseInfix, ParsePrefix, ParsePostfix, Operand
     mut prefix: ParsePrefix,
     mut postfix: ParsePostfix,
     mut infix: ParseInfix,
-) -> PResult<Operand, E>
+) -> Result<Operand, E>
 where
     I: Stream + StreamIsPartial,
     ParseOperand: Parser<I, Operand, E>,
-    ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> PResult<Operand, E>), E>,
-    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> PResult<Operand, E>), E>,
-    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> PResult<Operand, E>), E>,
+    ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> Result<Operand, E>), E>,
+    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
     E: ParserError<I>,
 {
     // a stack for computing the result
@@ -67,7 +67,7 @@ where
             value_stack.push(operand);
         } else {
             // error missing operand
-            return Err(ErrMode::from_error_kind(i, ErrorKind::Token));
+            return Err(E::from_input(i));
         }
 
         if i.eof_offset() <= 0 {
@@ -145,9 +145,9 @@ where
 
 enum Operator<I, Operand, E> {
     // left binding power for the postfix or the right one for the prefix
-    Unary(i64, fn(&mut I, Operand) -> PResult<Operand, E>),
+    Unary(i64, fn(&mut I, Operand) -> Result<Operand, E>),
     // left binding power and right binding power for the infix operator
-    Binary(Assoc, fn(&mut I, Operand, Operand) -> PResult<Operand, E>),
+    Binary(Assoc, fn(&mut I, Operand, Operand) -> Result<Operand, E>),
 }
 
 impl<I, O, E> Operator<I, O, E> {
@@ -165,7 +165,7 @@ fn evaluate<I, Operand, E>(
     i: &mut I,
     stack: &mut Vec<Operand>,
     op: Operator<I, Operand, E>,
-) -> PResult<(), E> {
+) -> Result<(), E> {
     match op {
         Operator::Unary(_, op) => {
             let lhs = stack.pop().expect("value");
@@ -188,7 +188,7 @@ fn unwind_operators_stack_to<I, Operand, E>(
     current_power: Assoc,
     value_stack: &mut Vec<Operand>,
     operator_stack: &mut Vec<Operator<I, Operand, E>>,
-) -> PResult<(), E> {
+) -> Result<(), E> {
     let mut current_is_neither = None;
     while operator_stack.last().is_some_and(|op| {
         let rpower = op.right_power();
@@ -225,7 +225,8 @@ fn unwind_operators_stack_to<I, Operand, E>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{
+    use winnow::{
+        ModalResult,
         ascii::digit1,
         combinator::{cut_err, delimited, empty, fail, peek},
         dispatch,
@@ -234,7 +235,7 @@ mod tests {
 
     use super::*;
 
-    fn parser(i: &mut &str) -> PResult<i32> {
+    fn parser(i: &mut &str) -> ModalResult<i32> {
         precedence(
             0,
             trace(
@@ -281,9 +282,10 @@ mod tests {
 
     #[test]
     fn test_parser() {
-        // assert_eq!(parser.parse("1==2==3"), Ok(11));
         assert_eq!(parser.parse("1+4+6"), Ok(11));
-        // assert_eq!(parser.parse("2*(4+6)"), Ok(20));
-        // assert!(matches!(parser.parse("2*"), Err(_)));
+        assert_eq!(parser.parse("2*(4+6)"), Ok(20));
+
+        assert!(parser.parse("1==2==3").is_err());
+        assert!(parser.parse("2*").is_err());
     }
 }
