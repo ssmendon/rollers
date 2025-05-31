@@ -4,10 +4,11 @@ use winnow::stream::{Stream, StreamIsPartial};
 use winnow::{Parser, Result};
 
 use super::precedence::Assoc;
+use super::precedence::Power;
 use winnow::combinator::trace;
 
 pub fn precedence<I, ParseOperand, ParseInfix, ParsePrefix, ParsePostfix, Operand, E>(
-    start_precedence: i64,
+    start_precedence: Power,
     mut operand: ParseOperand,
     mut prefix: ParsePrefix,
     mut postfix: ParsePostfix,
@@ -17,8 +18,8 @@ where
     I: Stream + StreamIsPartial,
     ParseOperand: Parser<I, Operand, E>,
     ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> Result<Operand, E>), E>,
-    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
-    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePrefix: Parser<I, (Power, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePostfix: Parser<I, (Power, fn(&mut I, Operand) -> Result<Operand, E>), E>,
     E: ParserError<I>,
 {
     trace("precedence", move |i: &mut I| {
@@ -35,7 +36,7 @@ where
 }
 
 fn shunting_yard<I, ParseOperand, ParseInfix, ParsePrefix, ParsePostfix, Operand, E>(
-    start_precedence: i64,
+    start_precedence: Power,
     i: &mut I,
     mut operand: ParseOperand,
     mut prefix: ParsePrefix,
@@ -46,8 +47,8 @@ where
     I: Stream + StreamIsPartial,
     ParseOperand: Parser<I, Operand, E>,
     ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> Result<Operand, E>), E>,
-    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
-    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePrefix: Parser<I, (Power, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePostfix: Parser<I, (Power, fn(&mut I, Operand) -> Result<Operand, E>), E>,
     E: ParserError<I>,
 {
     // a stack for computing the result
@@ -145,13 +146,13 @@ where
 
 enum Operator<I, Operand, E> {
     // left binding power for the postfix or the right one for the prefix
-    Unary(i64, fn(&mut I, Operand) -> Result<Operand, E>),
+    Unary(Power, fn(&mut I, Operand) -> Result<Operand, E>),
     // left binding power and right binding power for the infix operator
     Binary(Assoc, fn(&mut I, Operand, Operand) -> Result<Operand, E>),
 }
 
 impl<I, O, E> Operator<I, O, E> {
-    fn right_power(&self) -> i64 {
+    fn right_power(&self) -> Power {
         match self {
             Operator::Unary(p, _) => *p,
             Operator::Binary(Assoc::Left(p), _) => *p + 1,
@@ -184,7 +185,7 @@ fn evaluate<I, Operand, E>(
 
 fn unwind_operators_stack_to<I, Operand, E>(
     i: &mut I,
-    start_precedence: i64,
+    start_precedence: Power,
     current_power: Assoc,
     value_stack: &mut Vec<Operand>,
     operator_stack: &mut Vec<Operator<I, Operand, E>>,

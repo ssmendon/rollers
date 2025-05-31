@@ -5,6 +5,8 @@ use winnow::{
     stream::{Stream, StreamIsPartial},
 };
 
+pub type Power = i64;
+
 /// Parses an expression based on operator precedence.
 #[doc(alias = "pratt")]
 #[doc(alias = "separated")]
@@ -12,7 +14,7 @@ use winnow::{
 #[doc(alias = "precedence_climbing")]
 #[inline(always)]
 pub fn precedence<I, ParseOperand, ParseInfix, ParsePrefix, ParsePostfix, Operand, E>(
-    start_power: i64,
+    start_power: Power,
     mut operand: ParseOperand,
     mut prefix: ParsePrefix,
     mut postfix: ParsePostfix,
@@ -22,8 +24,8 @@ where
     I: Stream + StreamIsPartial,
     ParseOperand: Parser<I, Operand, E>,
     ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> Result<Operand, E>), E>,
-    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
-    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePrefix: Parser<I, (Power, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePostfix: Parser<I, (Power, fn(&mut I, Operand) -> Result<Operand, E>), E>,
     E: ParserError<I>,
 {
     trace("precedence", move |i: &mut I| {
@@ -41,9 +43,9 @@ where
 
 #[derive(Debug, Clone, Copy)]
 pub enum Assoc {
-    Left(i64),
-    Right(i64),
-    Neither(i64),
+    Left(Power),
+    Right(Power),
+    Neither(Power),
 }
 
 // recursive function
@@ -53,14 +55,14 @@ fn precedence_impl<I, ParseOperand, ParseInfix, ParsePrefix, ParsePostfix, Opera
     prefix: &mut ParsePrefix,
     postfix: &mut ParsePostfix,
     infix: &mut ParseInfix,
-    min_power: i64,
+    min_power: Power,
 ) -> Result<Operand, E>
 where
     I: Stream + StreamIsPartial,
     ParseOperand: Parser<I, Operand, E>,
     ParseInfix: Parser<I, (Assoc, fn(&mut I, Operand, Operand) -> Result<Operand, E>), E>,
-    ParsePrefix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
-    ParsePostfix: Parser<I, (i64, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePrefix: Parser<I, (Power, fn(&mut I, Operand) -> Result<Operand, E>), E>,
+    ParsePostfix: Parser<I, (Power, fn(&mut I, Operand) -> Result<Operand, E>), E>,
     E: ParserError<I>,
 {
     let operand = opt(parse_operand.by_ref()).parse_next(i)?;
