@@ -67,7 +67,7 @@ pub(crate) enum Expr {
 // Parser definition
 
 pub(crate) fn pratt_parser(i: &mut &str) -> ModalResult<Expr> {
-    use dice_parse::winnow_ext::precedence::{self, Assoc};
+    use pratt::precedence::{self, Assoc};
     // precedence is based on https://en.cppreference.com/w/c/language/operator_precedence
     // but specified in reverse order, because the `cppreference` table
     // uses `descending` precedence, but we need ascending one

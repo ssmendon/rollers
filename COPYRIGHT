@@ -1,0 +1,14 @@
+Short version for non-lawyers:
+
+rollers (and all crates in its workspace) is licensed under MIT terms.
+
+Longer version:
+
+Copyrights in rollers are retained by their contributors. No
+copyright assignment is required to contribute to rollers.
+
+Except as otherwise noted (below and/or in individual files), rollers is
+licensed under the MIT license <LICENSE-MIT> or <http://opensource.org/licenses/MIT>, at your option.
+
+rollers contains code from winnow and, similarly, winnow contributors
+retain copyright on their contributions.

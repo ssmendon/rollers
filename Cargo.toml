@@ -1,26 +1,32 @@
-[package]
-name = "rollers"
-version = "0.1.0"
+[workspace.package]
 authors = ["Sohum Mendon <smendon@proton.me>"]
-description = """
-rollers is a minimal dice-notation parsing tool.
-"""
-documentation = "https://github.com/ssmendon/rollers"
-homepage = "https://github.com/ssmendon/rollers"
+version = "0.1.0"
+description = "rollers is a dice-notation parsing tool."
+
+license = "MIT"
 repository = "https://github.com/ssmendon/rollers"
-keywords = ["dice", "calculator"]
-categories = ["command-line-utilities", "text-processing"]
-license = "Unlicense OR MIT"
+
+categories = ["games", "command-line-interface"]
+keywords = ["dice", "ast", "parsing"]
+
 edition = "2024"
 rust-version = "1.87.0"
 
+[package]
+name = "rollers"
+version.workspace = true
+authors.workspace = true
+categories.workspace = true
+description.workspace = true
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
 [workspace]
-members = [
-    "fuzz",
-    "crates/dice-parser",
-    "crates/dice-mocks",
-    "crates/dice_parse",
-]
+members = ["fuzz", "crates/dice-parser", "crates/dice-mocks", "crates/pratt"]
+resolver = "3"
 
 [dependencies]
 dice-parser = { version = "0.1.0", path = "crates/dice-parser" }

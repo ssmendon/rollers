@@ -7,6 +7,8 @@ use super::precedence::Assoc;
 use super::precedence::Power;
 use winnow::combinator::trace;
 
+use alloc::vec::Vec;
+
 pub fn precedence<I, ParseOperand, ParseInfix, ParsePrefix, ParsePostfix, Operand, E>(
     start_precedence: Power,
     mut operand: ParseOperand,
@@ -202,6 +204,7 @@ fn unwind_operators_stack_to<I, Operand, E>(
                 p
             }
         };
+        #[cfg(feature = "std")]
         dbg!(
             lpower,
             rpower,
@@ -235,6 +238,12 @@ mod tests {
     };
 
     use super::*;
+
+    #[cfg(not(feature = "std"))]
+    macro_rules! println {
+        () => {};
+        ($($arg:tt)*) => {};
+    }
 
     fn parser(i: &mut &str) -> ModalResult<i32> {
         precedence(
