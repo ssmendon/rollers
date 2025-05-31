@@ -30,3 +30,5 @@ resolver = "3"
 
 [dependencies]
 dice-parser = { version = "0.1.0", path = "crates/dice-parser" }
+
+[dev-dependencies]

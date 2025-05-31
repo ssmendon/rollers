@@ -99,7 +99,7 @@ fn parse_expression(c: &mut Criterion) {
         b.iter(|| std::hint::black_box(pratt_parser.parse(input).unwrap()));
     });
 
-    group.bench_function("shunting yard", |b| {
+    group.bench_function("shunting_yard", |b| {
         b.iter(|| std::hint::black_box(shunting_yard_parser.parse(input).unwrap()));
     });
 }

@@ -22,7 +22,9 @@ std = ["alloc", "winnow/std"]
 winnow = { version = "0.7", default-features = false }
 
 [dev-dependencies]
+bumpalo = { version = "3.17.0", features = ["std", "collections", "boxed"] }
 criterion = "0.6.0"
+
 
 [[example]]
 name = "pratt_c"
@@ -32,6 +34,17 @@ required-features = ["std"]
 [[bench]]
 name = "pratt_c_example"
 path = "examples/pratt_c/bench.rs"
+harness = false
+required-features = ["std"]
+
+[[example]]
+name = "pratt_c_bump"
+test = true
+required-features = ["std"]
+
+[[bench]]
+name = "pratt_c_bump_bench"
+path = "examples/pratt_c_bump/bench.rs"
 harness = false
 required-features = ["std"]
 
