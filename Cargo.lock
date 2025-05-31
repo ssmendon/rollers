@@ -281,6 +281,7 @@ name = "dice_parse"
 version = "0.1.0"
 dependencies = [
  "bumpalo",
+ "criterion",
  "winnow",
 ]
 

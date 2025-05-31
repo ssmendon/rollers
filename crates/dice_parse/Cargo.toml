@@ -11,8 +11,16 @@ winnow = { version = "0.7.10", features = ["std"] }
 unstable = []
 
 [dev-dependencies]
+criterion = "0.6.0"
 
 [[example]]
 name = "pratt"
 test = true
+required-features = ["unstable"]
+
+[[bench]]
+name = "pratt"
+path = "examples/pratt/bench.rs"
+bench = true
+harness = false
 required-features = ["unstable"]
