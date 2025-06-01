@@ -1,10 +1,11 @@
 #![allow(dead_code)]
 
+mod combinator;
 mod pieces;
 
 use bumpalo::boxed::Box;
 use bumpalo::collections::String as BString;
-use pieces::{dice, label, num};
+
 use winnow::{
     ModalResult, Parser, Stateful,
     ascii::multispace0,
@@ -12,6 +13,9 @@ use winnow::{
     error::{ContextError, ErrMode},
     token::any,
 };
+
+use combinator::ws;
+use pieces::{dice, label, num};
 
 type Input<'i, 'a> = Stateful<&'i str, &'a bumpalo::Bump>;
 type Num = i16;
@@ -90,8 +94,7 @@ fn pratt_parser<'i, 'a>(i: &mut Input<'i, 'a>) -> ModalResult<Expr<'a>> {
                 start_power,
                 trace(
                     "operand",
-                    delimited(
-                        multispace0,
+                    ws(
                         dispatch! {peek(any);
                             '(' => |i: &mut Input<'i, 'a>| {
                                     delimited(
@@ -107,25 +110,21 @@ fn pratt_parser<'i, 'a>(i: &mut Input<'i, 'a>) -> ModalResult<Expr<'a>> {
                                 num.map(Expr::Value),
                             ))
                         },
-                        multispace0,
                     ),
                 ),
                 trace(
                     "prefix",
-                    delimited(
-                        multispace0,
-                        dispatch! {any;
+                        ws(dispatch! {any;
                             '+' => empty.value((18, (|_: &mut _, a| Ok(a)) as _)),
                             '-' => alt((
                                 empty.value((18, (|i: &mut Input<'i, 'a>, a| Ok(Expr::Neg(Box::new_in(a, i.state)))) as _)),
                             )),
                             _ => fail,
                         },
-                        multispace0,
                     ),
                 ),
                 trace("postfix",
-                    delimited(multispace0,
+                    ws(
                         dispatch! {any;
                             '[' => empty.value((19, (|i: &mut Input<'i, 'a>, a| {
                                 let label = delimited(
@@ -138,7 +137,7 @@ fn pratt_parser<'i, 'a>(i: &mut Input<'i, 'a>) -> ModalResult<Expr<'a>> {
                             }) as _)),
                             _ => fail,
                         },
-                        multispace0)
+                    )
                 ),
                 trace("infix", dispatch!{any;
                     '*' => empty.value(
