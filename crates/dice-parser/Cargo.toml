@@ -1,24 +1,22 @@
 [package]
 name = "dice-parser"
-version = "0.1.0"
-edition = "2024"
+authors.workspace = true
+description.workspace = true
+version.workspace = true
+
+categories.workspace = true
+keywords.workspace = true
+
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [dependencies]
-arbitrary = { version = "1.4.1", optional = true, features = ["derive"] }
-lazy_static = "1.5.0"
-pest = "2.8.0"
-pest_derive = "2.8.0"
-rand = "0.9.1"
-recursion = "0.5.2"
-thiserror = "2.0.12"
+bumpalo = { version = "3.17.0", features = ["std", "collections", "boxed"] }
+pratt = { version = "0.1.0", path = "../pratt" }
+winnow = { version = "0.7.10", features = ["std", "simd"] }
 
 [dev-dependencies]
-criterion = "0.6.0"
-dice-mocks = { path = "../dice-mocks" }
-proptest = "1"
-
-[[bench]]
-name = "full_bench"
-harness = false
 
 [features]
