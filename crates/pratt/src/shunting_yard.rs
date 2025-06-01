@@ -73,7 +73,7 @@ where
             return Err(E::from_input(i));
         }
 
-        if i.eof_offset() <= 0 {
+        if i.eof_offset() == 0 {
             break 'parse;
         }
 
