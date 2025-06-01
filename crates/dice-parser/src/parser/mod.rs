@@ -96,7 +96,7 @@ fn pratt_parser<'i, 'a>(i: &mut Input<'i, 'a>) -> ModalResult<Expr<'a>> {
                             '(' => |i: &mut Input<'i, 'a>| {
                                     delimited(
                                         '(',
-                                        parser(0).map(|e| Expr::Paren(Box::new_in(e, &*i.state))),
+                                        parser(0).map(|e| Expr::Paren(Box::new_in(e, i.state))),
                                         cut_err(')')
                                     ).parse_next(i)
                                 },
@@ -130,7 +130,7 @@ fn pratt_parser<'i, 'a>(i: &mut Input<'i, 'a>) -> ModalResult<Expr<'a>> {
                             '[' => empty.value((19, (|i: &mut Input<'i, 'a>, a| {
                                 let label = delimited(
                                     multispace0,
-                                    label.map(|s| BString::from_str_in(s, &*i.state)),
+                                    label.map(|s| BString::from_str_in(s, i.state)),
                                     (multispace0, cut_err(']'), multispace0))
                                 .parse_next(i)?;
 
@@ -144,26 +144,26 @@ fn pratt_parser<'i, 'a>(i: &mut Input<'i, 'a>) -> ModalResult<Expr<'a>> {
                     '*' => empty.value(
                         (Assoc::Left(16),
                         (|i: &mut Input<'i, 'a>, a, b| Ok(
-                         Expr::Mul(Box::new_in(a, &i.state),
-                                   Box::new_in(b, &i.state))
+                         Expr::Mul(Box::new_in(a, i.state),
+                                   Box::new_in(b, i.state))
                     )) as _)),
                     '/' => empty.value(
                         (Assoc::Left(16),
                         (|i: &mut Input<'i, 'a>, a, b| Ok(
-                            Expr::Div(Box::new_in(a, &i.state),
-                                      Box::new_in(b, &i.state))
+                            Expr::Div(Box::new_in(a, i.state),
+                                      Box::new_in(b, i.state))
                         )) as _)),
                     '+' => empty.value(
                         (Assoc::Left(14),
                         (|i: &mut Input<'i, 'a>, a, b| Ok(
-                            Expr::Add(Box::new_in(a, &i.state),
-                                      Box::new_in(b, &i.state))
+                            Expr::Add(Box::new_in(a, i.state),
+                                      Box::new_in(b, i.state))
                         )) as _)),
                     '-' => empty.value(
                         (Assoc::Left(14),
                         (|i: &mut Input<'i, 'a>, a, b| Ok(
-                            Expr::Sub(Box::new_in(a, &i.state),
-                                      Box::new_in(b, &i.state))
+                            Expr::Sub(Box::new_in(a, i.state),
+                                      Box::new_in(b, i.state))
                         )) as _)),
                     _ => fail,
                 }
