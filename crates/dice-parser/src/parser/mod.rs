@@ -20,7 +20,7 @@ use pieces::{dice, label, num};
 type Input<'i, 'a> = Stateful<&'i str, &'a bumpalo::Bump>;
 type Num = i16;
 
-enum Expr<'arena> {
+pub(crate) enum Expr<'arena> {
     // Operands
     Value(Num),
     Dice(Num, Num),
@@ -33,8 +33,6 @@ enum Expr<'arena> {
 
     // Unary postfix
     Label(Box<'arena, Expr<'arena>>, BString<'arena>),
-
-    // Binary left-associative, >),
 
     // Binary left-associative
     Add(Box<'arena, Expr<'arena>>, Box<'arena, Expr<'arena>>),

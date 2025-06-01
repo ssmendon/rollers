@@ -16,6 +16,8 @@ rust-version.workspace = true
 bumpalo = { version = "3.17.0", features = ["std", "collections", "boxed"] }
 pratt = { version = "0.1.0", path = "../pratt" }
 winnow = { version = "0.7.10", features = ["std", "simd"] }
+rand = "0.9.1"
+
 
 [dev-dependencies]
 
