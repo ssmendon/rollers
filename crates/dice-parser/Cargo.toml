@@ -18,6 +18,8 @@ pratt = { version = "0.1.0", path = "../pratt" }
 winnow = { version = "0.7.10", features = ["std", "simd"] }
 rand = "0.9.1"
 
+combine = { path = "../combine" }
+recursion = "0.5.2"
 
 [dev-dependencies]
 

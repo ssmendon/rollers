@@ -25,7 +25,12 @@ repository.workspace = true
 rust-version.workspace = true
 
 [workspace]
-members = ["crates/dice-parser", "crates/dice-mocks", "crates/pratt", "crates/combine"]
+members = [
+    "crates/dice-parser",
+    "crates/dice-mocks",
+    "crates/pratt",
+    "crates/combine",
+]
 resolver = "3"
 
 [dependencies]

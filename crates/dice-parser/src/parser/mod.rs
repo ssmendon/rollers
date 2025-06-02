@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-mod combinator;
 mod pieces;
 
 use bumpalo::boxed::Box;
@@ -14,7 +13,7 @@ use winnow::{
     token::any,
 };
 
-use combinator::ws;
+use combine::ws;
 use pieces::{dice, label, num};
 
 type Input<'i, 'a> = Stateful<&'i str, &'a bumpalo::Bump>;

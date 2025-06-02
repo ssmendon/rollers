@@ -1,9 +1,4 @@
-use core::str::FromStr;
-
-use winnow::{
-    ascii::{Int, Uint},
-    stream::AsChar,
-};
+use winnow::stream::AsChar;
 
 pub trait AsCharExt {
     /// Tests that `self` is in `1..=9`.
