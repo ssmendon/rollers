@@ -86,8 +86,8 @@ fn shunting_yard_parser(i: &mut Stream<'_>) -> winnow::Result<i64, EmptyError> {
 }
 
 fn parse_expression(c: &mut Criterion) {
-    // remove the last `\n`
-    let input = &CORPUS.as_bytes()[0..CORPUS.as_bytes().len() - 1];
+    // remove the last `\n` or other whitespace
+    let input = CORPUS.trim_ascii_end().as_bytes();
     let mut group = c.benchmark_group("pratt");
 
     pratt_parser.parse(input).expect("pratt should parse");
