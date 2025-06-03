@@ -88,6 +88,14 @@ where
 
 /// A combinator that accepts parenthesis-[`delimited`] input.
 ///
+/// This is not a generic delimited combinator. If:
+///
+/// 1. the first parenthesis matches,
+/// 2. and if the `inner` parser matches, but
+/// 3. the last parenthesis **doesn't** match
+///
+/// then this combinator fails irrecoverably using [`cut_err`].
+///
 /// # Examples
 ///
 /// ```rust
@@ -105,13 +113,16 @@ where
 ///     ))).parse_next(input)
 /// }
 ///
+/// let mut parser2 = alt((parser, "(123", "(abc"));
+///
 /// assert_eq!(parser.parse_peek("(1234)"), Ok(("", "1234")));
 /// assert_eq!(parser.parse_peek("(-123)"), Ok(("", "-123")));
+/// assert_eq!(parser2.parse_peek("(abc"), Ok(("", "(abc")));
 ///
 /// assert!(parser.parse_peek("(-12").is_err());
-/// assert!(matches!(
-///     alt(((parser), ("(1"))).parse_peek("(1"),
-///     Err(ErrMode::Cut(..))));
+///
+/// // Fails irrecoverably, since the '(' and `inner` matched.
+/// assert!(matches!(parser2.parse_peek("(123"), Err(ErrMode::Cut(..))));
 /// ```
 ///
 ///
