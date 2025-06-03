@@ -39,20 +39,20 @@ impl<'arena> MappableFrame for ExprFrame<'arena, PartiallyApplied> {
     }
 }
 
-impl<'arena> Expandable for Expr<'arena> {
-    type FrameToken = ExprFrame<'arena, PartiallyApplied>;
+// impl<'arena> Expandable for Expr<'arena> {
+//     type FrameToken = ExprFrame<'arena, PartiallyApplied>;
 
-    fn from_frame(val: <Self::FrameToken as MappableFrame>::Frame<Self>) -> Self {
-        match val {
-            ExprFrame::Value(num) => Expr::Value(num),
-            ExprFrame::Dice(c, s) => Expr::Dice(c, s),
-            ExprFrame::Paren(a) => Expr::Paren(a),
-            ExprFrame::Neg(a) => Expr::Neg(a),
-            ExprFrame::Label(a, msg) => Expr::Label(a, msg),
-            ExprFrame::Add(a, b) => Expr::Add(a, b),
-            ExprFrame::Sub(a, b) => Expr::Sub(a, a),
-            ExprFrame::Mul(a, b) => Expr::Mul(a, b),
-            ExprFrame::Div(a, b) => Expr::Div(a, b),
-        }
-    }
-}
+//     fn from_frame(val: <Self::FrameToken as MappableFrame>::Frame<Self>) -> Self {
+//         match val {
+//             ExprFrame::Value(num) => Expr::Value(num),
+//             ExprFrame::Dice(c, s) => Expr::Dice(c, s),
+//             ExprFrame::Paren(a) => Expr::Paren(a),
+//             ExprFrame::Neg(a) => Expr::Neg(a),
+//             ExprFrame::Label(a, msg) => Expr::Label(a, msg),
+//             ExprFrame::Add(a, b) => Expr::Add(a, b),
+//             ExprFrame::Sub(a, b) => Expr::Sub(a, a),
+//             ExprFrame::Mul(a, b) => Expr::Mul(a, b),
+//             ExprFrame::Div(a, b) => Expr::Div(a, b),
+//         }
+//     }
+// }

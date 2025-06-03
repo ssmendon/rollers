@@ -6,12 +6,12 @@ pub mod exts;
 
 use winnow::prelude::*;
 
-use winnow::error::ParserError;
-use winnow::stream::{AsBStr, AsChar, Stream, StreamIsPartial};
+use winnow::error::{ModalError, ParserError};
+use winnow::stream::{AsBStr, AsChar, Compare, Stream, StreamIsPartial};
 
 use winnow::ascii::{Int, Uint, digit0, digit1, multispace0};
 
-use winnow::combinator::{alt, delimited, dispatch, empty, fail, not, opt, trace};
+use winnow::combinator::{alt, cut_err, delimited, dispatch, empty, fail, not, opt, trace};
 use winnow::token::{any, one_of};
 
 use exts::AsCharExt;
@@ -44,7 +44,7 @@ where
     Error: ParserError<Input>,
     ParseNext: Parser<Input, Output, Error>,
 {
-    delimited(multispace0, inner, multispace0)
+    trace(stringify!(ws), delimited(multispace0, inner, multispace0))
 }
 
 /// Matches a single non-zero ASCII digit.
@@ -65,16 +65,12 @@ where
 /// ```rust
 /// # use winnow::prelude::*;
 /// # use winnow::error::ContextError;
-/// # use winnow::Partial;
 /// use combine::nonzero;
 ///
 /// assert_eq!(nonzero::<_, ContextError>.parse_peek("1"), Ok(("", '1')));
 /// assert_eq!(nonzero::<_, ContextError>.parse_peek("1023"), Ok(("023", '1')));
 ///
 /// assert!(nonzero::<_, ContextError>.parse_peek("0").is_err());
-///
-/// // Partial
-/// assert!(nonzero::<_, ContextError>.parse_peek("0123").is_err());
 /// ```
 #[inline(always)]
 pub fn nonzero<Input, Error>(input: &mut Input) -> Result<<Input as Stream>::Token, Error>
@@ -83,7 +79,52 @@ where
     <Input as Stream>::Token: AsChar + Clone,
     Error: ParserError<Input>,
 {
-    one_of(<Input as Stream>::Token::is_nonzero_dec_digit).parse_next(input)
+    trace(
+        stringify!(nonzero),
+        one_of(<Input as Stream>::Token::is_nonzero_dec_digit),
+    )
+    .parse_next(input)
+}
+
+/// A combinator that accepts parenthesis-[`delimited`] input.
+///
+/// # Examples
+///
+/// ```rust
+/// # use winnow::prelude::*;
+/// # use winnow::error::ContextError;
+/// # use winnow::combinator::alt;
+/// # use winnow::ascii::digit1;
+/// # use winnow::token::take;
+/// # use winnow::error::ErrMode;
+/// use combine::parens;
+/// fn parser<'i>(input: &mut &'i str) -> ModalResult<&'i str> {
+///     parens(alt((
+///         (digit1),
+///         ("-", digit1).take(),
+///     ))).parse_next(input)
+/// }
+///
+/// assert_eq!(parser.parse_peek("(1234)"), Ok(("", "1234")));
+/// assert_eq!(parser.parse_peek("(-123)"), Ok(("", "-123")));
+///
+/// assert!(parser.parse_peek("(-12").is_err());
+/// assert!(matches!(
+///     alt(((parser), ("(1"))).parse_peek("(1"),
+///     Err(ErrMode::Cut(..))));
+/// ```
+///
+///
+#[inline]
+pub fn parens<Input, Output, Error, ParseNext>(
+    inner: ParseNext,
+) -> impl Parser<Input, Output, Error>
+where
+    Input: Stream + StreamIsPartial + Compare<char>,
+    Error: ParserError<Input> + ModalError,
+    ParseNext: Parser<Input, Output, Error>,
+{
+    trace(stringify!(parens), delimited('(', inner, cut_err(')')))
 }
 
 /// Combinator for parsing a decimal signed integer (e.g. [`i32`]).
@@ -131,6 +172,7 @@ where
 /// assert!(parser.parse_peek("-000012").is_err());
 /// assert!(parser.parse_peek(&u64::MAX.to_string()).is_err()); // overflow
 /// ```
+#[inline]
 pub fn number_int<Input, Output, Error>(input: &mut Input) -> Result<Output, Error>
 where
     Input: StreamIsPartial + Stream,
@@ -193,6 +235,7 @@ where
 /// assert_eq!(parser.parse_peek("12340"), Ok(("", 12340)));
 /// assert_eq!(parser.parse_peek("0"), Ok(("", 0)));
 ///
+/// assert!(parser.parse_peek("-123").is_err());
 /// assert!(parser.parse_peek("-0").is_err());
 /// assert!(parser.parse_peek("+0").is_err());
 ///
@@ -206,6 +249,7 @@ where
 /// assert!(parser.parse_peek("-000012").is_err());
 /// assert!(parser.parse_peek(&u64::MAX.to_string()).is_err()); // overflow
 /// ```
+#[inline]
 pub fn number_uint<Input, Output, Error>(input: &mut Input) -> Result<Output, Error>
 where
     Input: StreamIsPartial + Stream,

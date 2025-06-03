@@ -13,7 +13,7 @@ use winnow::{
     token::any,
 };
 
-use combine::ws;
+use combine::{parens, ws};
 use pieces::{dice, label, num};
 
 type Input<'i, 'a> = Stateful<&'i str, &'a bumpalo::Bump>;
@@ -94,11 +94,7 @@ fn pratt_parser<'i, 'a>(i: &mut Input<'i, 'a>) -> ModalResult<Expr<'a>> {
                     ws(
                         dispatch! {peek(any);
                             '(' => |i: &mut Input<'i, 'a>| {
-                                    delimited(
-                                        '(',
-                                        parser(0).map(|e| Expr::Paren(Box::new_in(e, i.state))),
-                                        cut_err(')')
-                                    ).parse_next(i)
+                                    parens(parser(0).map(|e| Expr::Paren(Box::new_in(e, i.state)))).parse_next(i)
                                 },
                             _ => alt((
                                 |i: &mut Input<'i, 'a>| {
@@ -127,7 +123,7 @@ fn pratt_parser<'i, 'a>(i: &mut Input<'i, 'a>) -> ModalResult<Expr<'a>> {
                                 let label = delimited(
                                     multispace0,
                                     label.map(|s| BString::from_str_in(s, i.state)),
-                                    (multispace0, cut_err(']'), multispace0))
+                                    ws(cut_err(']')))
                                 .parse_next(i)?;
 
                                 Ok(Expr::Label(Box::new_in(a, i.state), label))
