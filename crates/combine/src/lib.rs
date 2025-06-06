@@ -138,6 +138,59 @@ where
     trace(stringify!(parens), delimited('(', inner, cut_err(')')))
 }
 
+/// A parser which, given some input, matches either:
+///     - A non-zero digit, followed by any amount of digits.
+///     - A single zero digit.
+///
+/// # Effective Signature
+///
+/// Lexing
+///
+/// ```rust
+/// # use winnow::prelude::*;
+/// pub fn number<'a>(input: &'a mut &'a str) -> winnow::Result<&'a str>
+/// # {
+/// #   combine::number.parse_next(input)
+/// # }
+/// ```
+///
+/// # Examples
+///
+/// ```rust
+/// # use winnow::prelude::*;
+/// use combine::number;
+///
+/// fn parser<'a>(input: &'a mut &'a str) -> ModalResult<&'a str> {
+///     number.parse_next(input)
+/// }
+/// ```
+///
+/// assert_eq!(parser.parse_peek("0"), Ok(("", "0")));
+/// assert_eq!(parser.parse_peek("1 123"), Ok((" 123", "1")));
+/// assert_eq!(parser.parse_peek("100"), Ok(("", "100")));
+///
+/// assert!(parser.parse_peek("00").is_error());
+/// assert!(parser.parse_peek("01003").is_error());
+/// assert!(parser.parse_peek("").is_error());
+#[inline]
+pub fn number<Input, Error>(input: &mut Input) -> Result<<Input as Stream>::Slice, Error>
+where
+    Input: Stream + StreamIsPartial,
+    <Input as Stream>::Token: AsChar,
+    Error: ParserError<Input>,
+{
+    trace(
+        stringify!(number),
+        dispatch! {any.map(AsChar::as_char);
+            '0' => (any, not(digit1)).void(),
+            '1'..='9' => digit1.void(),
+            _ => fail,
+        }
+        .take(),
+    )
+    .parse_next(input)
+}
+
 /// Combinator for parsing a decimal signed integer (e.g. [`i32`]).
 ///
 /// This differs from the [`dec_int`] implementation in that leadings zeroes are
